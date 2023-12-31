@@ -6,11 +6,30 @@ import React from "react";
 
 const inter = Inter({ subsets: ['latin'] })
 
-import { init } from "../geometry.js";
+import { init, setConfig } from "../geometry.js";
+
+import { useControls } from 'leva';
+
+const configInit = {
+  numPoints: { value: 50, min: 0, max: 500, step: 1 },
+  numTriangles: { value: 1, min: 0, max: 50, step: 1 },
+  numAABBs: { value: 0, min: 0, max: 25, step: 1 },
+  numOBBs: { value: 0, min: 0, max: 25, step: 1 },
+  numLines: { value: 0, min: 0, max: 25, step: 1 },
+  showNotation: false,
+  isStatic: false,
+  enablePointPoint: false,
+};
 
 export default function Home() {
 
-  React.useEffect(init);
+  React.useEffect(init, []);
+
+  const config = useControls(configInit);
+
+  React.useEffect(() => {
+    setConfig(config);
+  }, [JSON.stringify(config)]);
 
   return (
     <>

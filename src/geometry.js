@@ -1,11 +1,9 @@
 import { plasma } from './color-palettes';
 
-
-const showNotation = true;
-const isStatic = false;
-const enablePointPoint = false;
-
 const state = {
+    showNotation: true,
+    isStatic: false,
+    enablePointPoint: false,
     objects: [],
     bb: {
         t: -2,
@@ -359,7 +357,7 @@ const drawObjects = () => {
         const pointCenter = toCanvasCoords(point.x, point.y);
         ctx.moveTo(pointCenter.x, pointCenter.y);
         ctx.arc(pointCenter.x, pointCenter.y, 5, 0, 2 * Math.PI);
-        if (showNotation) {
+        if (state.showNotation) {
             ctx.fillText('P', pointCenter.x + 5, pointCenter.y - 10);
         }
     });
@@ -377,7 +375,7 @@ const drawObjects = () => {
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
 
-        if (showNotation) {
+        if (state.showNotation) {
             ctx.fillText('A', p1.x + 3, p1.y + 20);
             ctx.fillText('B', p2.x + 3, p2.y + 20);
         }
@@ -399,7 +397,7 @@ const drawObjects = () => {
         ctx.lineTo(p3.x, p3.y);
         ctx.closePath();
 
-        if (showNotation) {
+        if (state.showNotation) {
             ctx.fillText('A', p1.x + 3, p1.y + 20);
             ctx.fillText('B', p2.x + 3, p2.y + 20);
             ctx.fillText('C', p3.x + 3, p3.y + 20);
@@ -425,7 +423,7 @@ const drawObjects = () => {
         ctx.closePath();
         ctx.stroke();
 
-        if (showNotation) {
+        if (state.showNotation) {
             const c = toCanvasCoords(cx, cy);
             ctx.beginPath();
             ctx.moveTo(c.x, c.y);
@@ -453,7 +451,7 @@ const drawObjects = () => {
         ctx.closePath();
         ctx.stroke();
 
-        if (showNotation) {
+        if (state.showNotation) {
             const c = toCanvasCoords(cx, cy);
             ctx.beginPath();
             ctx.moveTo(c.x, c.y);
@@ -466,7 +464,7 @@ const drawObjects = () => {
 
 const getObjectPairMinPoints = (obj1, obj2) => {
     // point point
-    if (enablePointPoint && obj1.type === 'point' && obj2.type === 'point') {
+    if (state.enablePointPoint && obj1.type === 'point' && obj2.type === 'point') {
         // const dist = Math.sqrt((obj1.x - obj2.x)**2 + (obj1.y - obj2.y)**2);
         const points = [{ x: obj1.x, y: obj1.y }, {x: obj2.x, y: obj2.y}];
         return { points, cost: 4 };
@@ -546,7 +544,7 @@ const drawMinDist = () => {
         ctx.fillStyle = 'black';
         ctx.arc(coordsP2.x, coordsP2.y, 2, 0, 2 * Math.PI);
         ctx.fill();
-        if (showNotation) {
+        if (state.showNotation) {
             ctx.fillText('R', coordsP2.x + 5, coordsP2.y - 5);
         }
 
@@ -647,7 +645,7 @@ const demoLoop = () => {
     const dt = now - state.lastLoopTime;
     const t = now - state.timeStart;
 
-    if (!isStatic) {
+    if (!state.isStatic) {
         updateState(t, Math.min(1, dt / 1000));
     }
     drawState();
@@ -667,18 +665,30 @@ const init = () => {
     state.w = w;
     state.h = h;
 
-    // object creation
-    genPoint(20);
-    // genAABB(1);
-    // genOBB(1);
-    // genLine(1, 0.2);
-    genTri(1);
-
     state.timeStart = performance.now();
     state.lastLoopTime = state.timeStart;
     startDemoLoop();
 };
 
-// window.onload = init;
+const setConfig = (config) => {
+	const { showNotation, isStatic, enablePointPoint } = config;
 
-export { init };
+	state.showNotation = showNotation;
+	state.isStatic = isStatic;
+	state.enablePointPoint = enablePointPoint;
+
+	const { numPoints, numTriangles, numAABBs, numOBBs, numLines } = config;
+
+	// clear objects
+	state.objects = [];
+
+    // object creation
+    genPoint(numPoints);
+    genAABB(numAABBs);
+    genOBB(numOBBs);
+    genLine(numLines, 0.2);
+    genTri(numTriangles);
+
+};
+
+export { init, setConfig };
