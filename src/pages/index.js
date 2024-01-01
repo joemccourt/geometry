@@ -19,6 +19,7 @@ const configInit = {
   showNotation: false,
   isStatic: false,
   enablePointPoint: false,
+  shouldDrawAxes: false,
 };
 
 export default function Home() {

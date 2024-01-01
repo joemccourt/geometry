@@ -4,6 +4,7 @@ const state = {
     showNotation: true,
     isStatic: false,
     enablePointPoint: false,
+    shouldDrawAxes: false,
     objects: [],
     bb: {
         t: -2,
@@ -124,10 +125,10 @@ const genOBB = (n = 1) => {
 };
 
 const drawAxes = () => {
-    const { ctx, w, h } = state;
+    const { ctx, w, h, dpr } = state;
 
     ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 1 * dpr;
 
     const origin = toCanvasCoords(0, 0);
 
@@ -345,18 +346,18 @@ const costToColor = (cost) => {
     const index = Math.min(Math.floor(cost / 100 * n), n);
     const rgbNorm = plasma[index];
     return `rgb(${rgbNorm[0] * 255 | 0},${rgbNorm[1] * 255 | 0},${rgbNorm[2] * 255 | 0})`;
-}
+};
 
 const drawObjects = () => {
-    const { objects, ctx } = state;
-    ctx.font = '18px Helvetica';
+    const { objects, ctx, dpr } = state;
+    ctx.font = `${18*dpr}px Helvetica`;
     // points
     ctx.fillStyle = 'rgb(0, 150, 40)';
     ctx.beginPath();
     objects.filter(o => o.type === 'point').forEach(point => {
         const pointCenter = toCanvasCoords(point.x, point.y);
         ctx.moveTo(pointCenter.x, pointCenter.y);
-        ctx.arc(pointCenter.x, pointCenter.y, 5, 0, 2 * Math.PI);
+        ctx.arc(pointCenter.x, pointCenter.y, 5 * dpr, 0, 2 * Math.PI);
         if (state.showNotation) {
             ctx.fillText('P', pointCenter.x + 5, pointCenter.y - 10);
         }
@@ -364,7 +365,7 @@ const drawObjects = () => {
     ctx.fill();
 
     // lines
-    ctx.lineWidth = 2.2;
+    ctx.lineWidth = 2.2 * dpr;
     ctx.strokeStyle = 'rgb(50, 220, 40)';
     ctx.fillStyle = 'rgb(50, 220, 40)';
     ctx.beginPath();
@@ -383,7 +384,7 @@ const drawObjects = () => {
     ctx.stroke();
 
     // triangles
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * dpr;
     ctx.strokeStyle = 'rgb(50, 220, 240)';
     ctx.fillStyle = 'rgb(50, 220, 240)';
     ctx.beginPath();
@@ -406,7 +407,7 @@ const drawObjects = () => {
     ctx.stroke();
 
     // aabb
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * dpr;
     ctx.strokeStyle = 'rgb(50, 20, 140)';
     ctx.fillStyle = 'black';
     objects.filter(o => o.type === 'aabb').forEach(aabb => {
@@ -427,14 +428,14 @@ const drawObjects = () => {
             const c = toCanvasCoords(cx, cy);
             ctx.beginPath();
             ctx.moveTo(c.x, c.y);
-            ctx.arc(c.x, c.y, 3, 0, 2 * Math.PI);
+            ctx.arc(c.x, c.y, 3 * dpr, 0, 2 * Math.PI);
             ctx.fill();
             ctx.fillText('C', c.x + 5, c.y + 20);
         }
     });
 
     // obb
-    ctx.lineWidth = 1.2;
+    ctx.lineWidth = 1.2 * dpr;
     ctx.strokeStyle = 'rgb(150, 180, 40)';
     objects.filter(o => o.type === 'obb').forEach(line => {
         const { dx, dy, cx, cy, u1x, u1y, u2x, u2y } = line;
@@ -455,7 +456,7 @@ const drawObjects = () => {
             const c = toCanvasCoords(cx, cy);
             ctx.beginPath();
             ctx.moveTo(c.x, c.y);
-            ctx.arc(c.x, c.y, 3, 0, 2 * Math.PI);
+            ctx.arc(c.x, c.y, 3 * dpr, 0, 2 * Math.PI);
             ctx.fill();
             ctx.fillText('C', c.x + 5, c.y + 20);
         }
@@ -502,7 +503,7 @@ const getObjectPairMinPoints = (obj1, obj2) => {
 }
 
 const drawMinDist = () => {
-    const { objects, ctx } = state;
+    const { objects, ctx, dpr } = state;
 
     // const objectPairs = [];
     // for (let p1 = 0; p1 < objects.length - 1; p1++) {
@@ -532,7 +533,7 @@ const drawMinDist = () => {
         const coordsP2 = toCanvasCoords(closestPoints[1].x, closestPoints[1].y);
         ctx.strokeStyle = 'black';
 
-        ctx.lineWidth = 0.5;
+        ctx.lineWidth = 0.5 * dpr;
         ctx.beginPath();
         ctx.setLineDash([4, 8]);
         ctx.moveTo(coordsP1.x, coordsP1.y);
@@ -542,7 +543,7 @@ const drawMinDist = () => {
         
         ctx.beginPath();
         ctx.fillStyle = 'black';
-        ctx.arc(coordsP2.x, coordsP2.y, 2, 0, 2 * Math.PI);
+        ctx.arc(coordsP2.x, coordsP2.y, 2 * dpr, 0, 2 * Math.PI);
         ctx.fill();
         if (state.showNotation) {
             ctx.fillText('R', coordsP2.x + 5, coordsP2.y - 5);
@@ -550,7 +551,7 @@ const drawMinDist = () => {
 
         ctx.beginPath();
         ctx.fillStyle = costToColor(closestCost);
-        ctx.arc(coordsP1.x, coordsP1.y, 6, 0, 2 * Math.PI);
+        ctx.arc(coordsP1.x, coordsP1.y, 6 * dpr, 0, 2 * Math.PI);
         ctx.fill();
     })
 };
@@ -631,7 +632,9 @@ const updateState = (t, dt) => {
 
 const drawState = () => {
     state.ctx.clearRect(0, 0, state.w, state.h);
-    // drawAxes();
+    if (state.shouldDrawAxes) {
+        drawAxes();	
+    }
     drawObjects();
     drawMinDist();
 }
@@ -656,14 +659,34 @@ const demoLoop = () => {
 
 const init = () => {
     const el = document.getElementById('demo');
-    const { clientWidth: w, clientHeight: h } = el;
-
     const ctx = el.getContext('2d');
-    ctx.fillStyle = '#0f0';
-    ctx.fillRect(0, 0, w, h);
     state.ctx = ctx;
+
+    // const { clientWidth: w, clientHeight: h } = el;
+
+
+    // Setting canvas size properly
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+
+    const dpr = window.devicePixelRatio;
+
+    el.style.width = `${windowW}px`;
+    el.style.height = `${windowH}px`;
+
+    const w = windowW * dpr;
+    const h = windowH * dpr;
     state.w = w;
     state.h = h;
+
+    el.width = w;
+    el.height = h;
+
+    state.dpr = dpr;
+    ctx.scale(1 / dpr, 1 / dpr);
+
+    el.width = w;
+    el.height = h;
 
     state.timeStart = performance.now();
     state.lastLoopTime = state.timeStart;
@@ -679,6 +702,7 @@ const setConfig = (config) => {
 
 	const { numPoints, numTriangles, numAABBs, numOBBs, numLines } = config;
 
+
 	// clear objects
 	state.objects = [];
 
@@ -688,6 +712,8 @@ const setConfig = (config) => {
     genOBB(numOBBs);
     genLine(numLines, 0.2);
     genTri(numTriangles);
+
+    state.shouldDrawAxes = config.shouldDrawAxes;
 
 };
 
