@@ -20,6 +20,8 @@ const configInit = {
   isStatic: false,
   enablePointPoint: false,
   shouldDrawAxes: false,
+  drawAllComparsions: false,
+  colorBy: { value: "closestCost", options: ['closestCost', 'totalCost', 'closestDist'] },
 };
 
 export default function Home() {

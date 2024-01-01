@@ -1,10 +1,12 @@
-import { plasma } from './color-palettes';
+import { drawObjects, drawAxes, costToColor } from './drawing';
+import { genPoint, genLine, genTri, genAABB, genOBB } from './primitives';
 
 const state = {
     showNotation: true,
     isStatic: false,
     enablePointPoint: false,
     shouldDrawAxes: false,
+    drawAllComparsions: false,
     objects: [],
     bb: {
         t: -2,
@@ -23,162 +25,15 @@ const toCanvasCoords = (x, y) => {
     };
 };
 
-const genPoint = (n = 1) => {
-    const { bb } = state;
-    while (n > 0) {
-        state.objects.push({
-            type: 'point',
-            x: bb.w * Math.random() + bb.l,
-            y: bb.h * Math.random() + bb.t,
-            vx: 0.25 * (2 * Math.random() - 1),
-            vy: 0.25 * (2 * Math.random() - 1)
-        });
-        n--;
-    }
-};
-
-const genLine = (n = 1, vAmp = 1) => {
-    while (n > 0) {
-        const x1 = vAmp * (2 * Math.random() - 1);
-        const y1 = vAmp * (2 * Math.random() - 1);
-        const r = 1;//0.8 * Math.random() + 0.5;
-        const angle = 2 * Math.PI * Math.random() * 3;
-        state.objects.push({
-            type: 'line',
-            x1,
-            y1,
-            x2: x1 + r * Math.cos(angle),
-            y2: y1 + r * Math.sin(angle),
-            vx: vAmp * (2 * Math.random() - 1),
-            vy: vAmp * (2 * Math.random() - 1),
-            theta: 2 * Math.random() - 1
-        });
-        n--;
-    }
-};
-
-const genTri = (n = 1) => {
-    while (n > 0) {
-        const ax = (2 * Math.random() - 1);
-        const ay = (2 * Math.random() - 1);
-        const bx = (2 * Math.random() - 1);
-        const by = (2 * Math.random() - 1);
-        const cx = (2 * Math.random() - 1);
-        const cy = (2 * Math.random() - 1);
-        state.objects.push({
-            type: 'tri',
-            ax,
-            ay,
-            bx,
-            by,
-            cx,
-            cy,
-            vx: (2 * Math.random() - 1),
-            vy: (2 * Math.random() - 1),
-            theta: 2 * Math.random() - 1
-        });
-        n--;
-    }
-};
-const genAABB = (n = 1) => {
-    while (n > 0) {
-        const dx = Math.random() + 0.1;
-        const dy = Math.random() + 0.1;
-        const cx = 2 * Math.random() - 1;
-        const cy = 2 * Math.random() - 1;
-
-        state.objects.push({
-            type: 'aabb',
-            dx,
-            dy,
-            cx,
-            cy
-        });
-        n--;
-    }
-}
-const genOBB = (n = 1) => {
-    while (n > 0) {
-        const dx = Math.random() + 0.1;
-        const dy = Math.random() + 0.1;
-        const cx = 0.5 * (2 * Math.random() - 1);
-        const cy = 0.5 * (2 * Math.random() - 1);
-        const theta = Math.random() * 2 * Math.PI;
-        const u1x = Math.cos(theta);
-        const u1y = Math.sin(theta);
-        const u2x = Math.cos(theta + Math.PI / 2);
-        const u2y = Math.sin(theta + Math.PI / 2);
-
-        state.objects.push({
-            type: 'obb',
-            cx,
-            cy,
-            dx,
-            dy,
-            u1x,
-            u1y,
-            u2x,
-            u2y
-        });
-        n--;
-    }
-};
-
-const drawAxes = () => {
-    const { ctx, w, h, dpr } = state;
-
-    ctx.strokeStyle = '#000';
-    ctx.lineWidth = 1 * dpr;
-
-    const origin = toCanvasCoords(0, 0);
-
-    // x axis
-    ctx.beginPath();
-    for (let x = -5; x <= 5; x += 1) {
-        const coord = toCanvasCoords(x, 0);
-        ctx.moveTo(coord.x, coord.y - h);
-        ctx.lineTo(coord.x, coord.y + h);
-    }
-    for (let x = -5; x <= 5; x += 0.25) {
-        const coord = toCanvasCoords(x, 0);
-        ctx.moveTo(coord.x, coord.y - 3);
-        ctx.lineTo(coord.x, coord.y + 3);
-    }
-    ctx.moveTo(origin.x - w, origin.y);
-    ctx.lineTo(origin.x + w, origin.y);
-    ctx.stroke();
-
-    ctx.fillStyle = '#000';
-    ctx.fillText('x', w - 10, origin.y + 10);
-
-    // y axis
-    ctx.beginPath();
-    for (let y = -5; y <= 5; y += 1) {
-        const coord = toCanvasCoords(0, y);
-        ctx.moveTo(coord.x - w, coord.y);
-        ctx.lineTo(coord.x + w, coord.y);
-    }
-    for (let y = -5; y <= 5; y += 0.25) {
-        const coord = toCanvasCoords(0, y);
-        ctx.moveTo(coord.x - 3, coord.y);
-        ctx.lineTo(coord.x + 3, coord.y);
-    }
-    ctx.moveTo(origin.x, origin.y - h);
-    ctx.lineTo(origin.x, origin.y + h);
-    ctx.stroke();
-
-    ctx.fillStyle = '#000';
-    ctx.fillText('y', origin.x + 5, 10);
-};
-
 const pointAABB = (point, aabb) => {
     let cost = 0;
 
     const { dx, dy, cx, cy } = aabb;
     const x = Math.min(Math.max(point.x, cx - dx), cx + dx);
     const y = Math.min(Math.max(point.y, cy - dy), cy + dy);
+    cost += 10;
 
-    return { points: [point , { x, y }], cost};
+    return { points: [point, { x, y }], cost};
 };
 
 const pointOBB = (point, obb) => {
@@ -189,18 +44,22 @@ const pointOBB = (point, obb) => {
     // relative to center
     const px = point.x - cx;
     const py = point.y - cy;
+    cost += 5;
 
     // oriented axis distances (p - c) * u1, (p - c) * u2
     let dist1 = px * u1x + py * u1y;
     let dist2 = px * u2x + py * u2y;
+    cost += 15;
 
     // clamp in oriented space
     dist1 = Math.min(Math.max(dist1, -dx), dx);
     dist2 = Math.min(Math.max(dist2, -dy), dy);
+    cost += 8;
 
     // c + dist1 * u1 + dist2 * u2
     const x = cx + dist1 * u1x + dist2 * u2x;
     const y = cy + dist1 * u1y + dist2 * u2y;
+    cost += 15;
     
     return { points: [point, { x , y }], cost };
 };
@@ -341,128 +200,6 @@ const pointTri = (point, tri) => {
     return { points: [point, {x: ax + abx * v + acx * w, y: ay + aby * v + acy * w}], cost}
 };
 
-const costToColor = (cost) => {
-    const n = plasma.length - 1;
-    const index = Math.min(Math.floor(cost / 100 * n), n);
-    const rgbNorm = plasma[index];
-    return `rgb(${rgbNorm[0] * 255 | 0},${rgbNorm[1] * 255 | 0},${rgbNorm[2] * 255 | 0})`;
-};
-
-const drawObjects = () => {
-    const { objects, ctx, dpr } = state;
-    ctx.font = `${18*dpr}px Helvetica`;
-    // points
-    ctx.fillStyle = 'rgb(0, 150, 40)';
-    ctx.beginPath();
-    objects.filter(o => o.type === 'point').forEach(point => {
-        const pointCenter = toCanvasCoords(point.x, point.y);
-        ctx.moveTo(pointCenter.x, pointCenter.y);
-        ctx.arc(pointCenter.x, pointCenter.y, 5 * dpr, 0, 2 * Math.PI);
-        if (state.showNotation) {
-            ctx.fillText('P', pointCenter.x + 5, pointCenter.y - 10);
-        }
-    });
-    ctx.fill();
-
-    // lines
-    ctx.lineWidth = 2.2 * dpr;
-    ctx.strokeStyle = 'rgb(50, 220, 40)';
-    ctx.fillStyle = 'rgb(50, 220, 40)';
-    ctx.beginPath();
-    objects.filter(o => o.type === 'line').forEach(line => {
-        const { x1, y1, x2, y2 } = line;
-        const p1 = toCanvasCoords(x1, y1);
-        const p2 = toCanvasCoords(x2, y2);
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-
-        if (state.showNotation) {
-            ctx.fillText('A', p1.x + 3, p1.y + 20);
-            ctx.fillText('B', p2.x + 3, p2.y + 20);
-        }
-    });
-    ctx.stroke();
-
-    // triangles
-    ctx.lineWidth = 1.2 * dpr;
-    ctx.strokeStyle = 'rgb(50, 220, 240)';
-    ctx.fillStyle = 'rgb(50, 220, 240)';
-    ctx.beginPath();
-    objects.filter(o => o.type === 'tri').forEach(line => {
-        const { ax, ay, bx, by, cx, cy } = line;
-        const p1 = toCanvasCoords(ax, ay);
-        const p2 = toCanvasCoords(bx, by);
-        const p3 = toCanvasCoords(cx, cy);
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
-        ctx.closePath();
-
-        if (state.showNotation) {
-            ctx.fillText('A', p1.x + 3, p1.y + 20);
-            ctx.fillText('B', p2.x + 3, p2.y + 20);
-            ctx.fillText('C', p3.x + 3, p3.y + 20);
-        }
-    });
-    ctx.stroke();
-
-    // aabb
-    ctx.lineWidth = 1.2 * dpr;
-    ctx.strokeStyle = 'rgb(50, 20, 140)';
-    ctx.fillStyle = 'black';
-    objects.filter(o => o.type === 'aabb').forEach(aabb => {
-        const { dx, dy, cx, cy } = aabb;
-        const p1 = toCanvasCoords(cx - dx, cy - dy);
-        const p2 = toCanvasCoords(cx + dx, cy - dy);
-        const p3 = toCanvasCoords(cx + dx, cy + dy);
-        const p4 = toCanvasCoords(cx - dx, cy + dy);
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
-        ctx.lineTo(p4.x, p4.y);
-        ctx.closePath();
-        ctx.stroke();
-
-        if (state.showNotation) {
-            const c = toCanvasCoords(cx, cy);
-            ctx.beginPath();
-            ctx.moveTo(c.x, c.y);
-            ctx.arc(c.x, c.y, 3 * dpr, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.fillText('C', c.x + 5, c.y + 20);
-        }
-    });
-
-    // obb
-    ctx.lineWidth = 1.2 * dpr;
-    ctx.strokeStyle = 'rgb(150, 180, 40)';
-    objects.filter(o => o.type === 'obb').forEach(line => {
-        const { dx, dy, cx, cy, u1x, u1y, u2x, u2y } = line;
-        const p1 = toCanvasCoords(cx + dx * u1x + dy * u2x, cy + dx * u1y + dy * u2y);
-        const p2 = toCanvasCoords(cx - dx * u1x + dy * u2x, cy - dx * u1y + dy * u2y);
-        const p3 = toCanvasCoords(cx - dx * u1x - dy * u2x, cy - dx * u1y - dy * u2y);
-        const p4 = toCanvasCoords(cx + dx * u1x - dy * u2x, cy + dx * u1y - dy * u2y);
-
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
-        ctx.lineTo(p4.x, p4.y);
-        ctx.closePath();
-        ctx.stroke();
-
-        if (state.showNotation) {
-            const c = toCanvasCoords(cx, cy);
-            ctx.beginPath();
-            ctx.moveTo(c.x, c.y);
-            ctx.arc(c.x, c.y, 3 * dpr, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.fillText('C', c.x + 5, c.y + 20);
-        }
-    });
-};
-
 const getObjectPairMinPoints = (obj1, obj2) => {
     // point point
     if (state.enablePointPoint && obj1.type === 'point' && obj2.type === 'point') {
@@ -516,10 +253,14 @@ const drawMinDist = () => {
         const { x, y } = o;
         // find closest
         let closestPoints, closestDist, closestCost;
+        let totalCost = 0;
+        const allPoints = [];
         objects.forEach((oTest, j) => {
             if (j === i) { return; }
             const { points, cost } = getObjectPairMinPoints(o, oTest);
+            totalCost += cost ?? 0;
             if (!points) { return; }
+            allPoints.push(points);
             const dist = (points[0].x - points[1].x)**2 + (points[0].y - points[1].y)**2;
             if (closestPoints === undefined || dist < closestDist) {
                 closestPoints = points;
@@ -529,30 +270,47 @@ const drawMinDist = () => {
         });
 
         if (!closestPoints) { return; }
-        const coordsP1 = toCanvasCoords(closestPoints[0].x, closestPoints[0].y);
-        const coordsP2 = toCanvasCoords(closestPoints[1].x, closestPoints[1].y);
-        ctx.strokeStyle = 'black';
 
-        ctx.lineWidth = 0.5 * dpr;
-        ctx.beginPath();
-        ctx.setLineDash([4, 8]);
-        ctx.moveTo(coordsP1.x, coordsP1.y);
-        ctx.lineTo(coordsP2.x, coordsP2.y);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        
-        ctx.beginPath();
-        ctx.fillStyle = 'black';
-        ctx.arc(coordsP2.x, coordsP2.y, 2 * dpr, 0, 2 * Math.PI);
-        ctx.fill();
-        if (state.showNotation) {
-            ctx.fillText('R', coordsP2.x + 5, coordsP2.y - 5);
-        }
+        const pointsToDraw = state.drawAllComparsions ? allPoints : [closestPoints];
 
-        ctx.beginPath();
-        ctx.fillStyle = costToColor(closestCost);
-        ctx.arc(coordsP1.x, coordsP1.y, 6 * dpr, 0, 2 * Math.PI);
-        ctx.fill();
+        pointsToDraw.forEach(pointPair => {
+	        const coordsP1 = toCanvasCoords(pointPair[0].x, pointPair[0].y);
+	        const coordsP2 = toCanvasCoords(pointPair[1].x, pointPair[1].y);
+	        ctx.strokeStyle = 'black';
+
+	        ctx.lineWidth = 0.5 * dpr;
+	        ctx.beginPath();
+	        ctx.setLineDash([4, 8]);
+	        ctx.moveTo(coordsP1.x, coordsP1.y);
+	        ctx.lineTo(coordsP2.x, coordsP2.y);
+	        ctx.stroke();
+	        ctx.setLineDash([]);
+	        
+	        ctx.beginPath();
+	        ctx.fillStyle = 'black';
+	        ctx.arc(coordsP2.x, coordsP2.y, 2 * dpr, 0, 2 * Math.PI);
+	        ctx.fill();
+	        if (state.showNotation) {
+	            ctx.fillText('R', coordsP2.x + 5, coordsP2.y - 5);
+	        }
+
+	        ctx.beginPath();
+
+	        let colorCost = 0;
+	        if (state.colorBy === 'closestCost') {
+	        	colorCost = closestCost;
+	        }
+	        if (state.colorBy === 'totalCost') {
+	        	colorCost = totalCost;
+	        }
+	        if (state.colorBy === 'closestDist') {
+	        	colorCost = Math.sqrt(closestDist) * 50 ?? 0;
+	        }
+	        ctx.fillStyle = costToColor(colorCost);
+	        ctx.arc(coordsP1.x, coordsP1.y, 6 * dpr, 0, 2 * Math.PI);
+	        ctx.fill();
+        });
+
     })
 };
 
@@ -633,9 +391,9 @@ const updateState = (t, dt) => {
 const drawState = () => {
     state.ctx.clearRect(0, 0, state.w, state.h);
     if (state.shouldDrawAxes) {
-        drawAxes();	
+        drawAxes(state, toCanvasCoords);	
     }
-    drawObjects();
+    drawObjects(state, toCanvasCoords);
     drawMinDist();
 }
 
@@ -699,6 +457,9 @@ const setConfig = (config) => {
 	state.showNotation = showNotation;
 	state.isStatic = isStatic;
 	state.enablePointPoint = enablePointPoint;
+    state.shouldDrawAxes = config.shouldDrawAxes;
+    state.drawAllComparsions = config.drawAllComparsions;
+    state.colorBy = config.colorBy;
 
 	const { numPoints, numTriangles, numAABBs, numOBBs, numLines } = config;
 
@@ -707,13 +468,13 @@ const setConfig = (config) => {
 	state.objects = [];
 
     // object creation
-    genPoint(numPoints);
-    genAABB(numAABBs);
-    genOBB(numOBBs);
-    genLine(numLines, 0.2);
-    genTri(numTriangles);
+    state.objects = state.objects.concat(genPoint(state.bb, numPoints));
+    state.objects = state.objects.concat(genAABB(numAABBs));
+    state.objects = state.objects.concat(genOBB(numOBBs));
+    state.objects = state.objects.concat(genLine(numLines, 0.2));
+    state.objects = state.objects.concat(genTri(numTriangles))
 
-    state.shouldDrawAxes = config.shouldDrawAxes;
+
 
 };
 
