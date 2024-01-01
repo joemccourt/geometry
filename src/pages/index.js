@@ -21,7 +21,7 @@ const configInit = {
   enablePointPoint: false,
   shouldDrawAxes: false,
   drawAllComparsions: false,
-  colorBy: { value: "closestCost", options: ['closestCost', 'totalCost', 'closestDist'] },
+  colorBy: { value: "closestDist", options: ['closestCost', 'totalCost', 'closestDist'] },
 };
 
 export default function Home() {

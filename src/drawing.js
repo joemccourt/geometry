@@ -97,8 +97,8 @@ export const drawObjects = (state, toCanvasCoords) => {
     // obb
     ctx.lineWidth = 1.2 * dpr;
     ctx.strokeStyle = 'rgb(150, 180, 40)';
-    objects.filter(o => o.type === 'obb').forEach(line => {
-        const { dx, dy, cx, cy, u1x, u1y, u2x, u2y } = line;
+    objects.filter(o => o.type === 'obb').forEach(obb => {
+        const { dx, dy, cx, cy, u1x, u1y, u2x, u2y } = obb;
         const p1 = toCanvasCoords(cx + dx * u1x + dy * u2x, cy + dx * u1y + dy * u2y);
         const p2 = toCanvasCoords(cx - dx * u1x + dy * u2x, cy - dx * u1y + dy * u2y);
         const p3 = toCanvasCoords(cx - dx * u1x - dy * u2x, cy - dx * u1y - dy * u2y);
